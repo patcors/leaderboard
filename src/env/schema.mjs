@@ -7,6 +7,8 @@ import { z } from "zod";
  */
 export const serverSchema = z.object({
   DATABASE_URL: z.string().url(),
+  AWS_ACCESS_KEY_ID: z.string(),
+  AWS_ACCESS_KEY_SECRET: z.string(),
   NODE_ENV: z.enum(["development", "test", "production"]),
 });
 
