@@ -1,22 +1,57 @@
-import { type NextPage } from "next";
+import { GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { InferGetStaticPropsType } from "next";
 import Head from "next/head";
 import Link from "next/link";
+import { useState } from "react";
 import ImageUploadButton from "../components/ImageUploadButton";
+import { s3Client } from "../utils/s3Client";
 
 import { trpc } from "../utils/trpc";
 
-const Home: NextPage = () => {
-  const hello = trpc.example.hello.useQuery({ text: "from tRPC" });
-  const imagePresignedUrl = trpc.images.getImagePresignedUrl.useQuery({
-    text: "key",
-  });
-  const imagePresignedPutUrl = trpc.images.getImagePresignedPutUrl.useQuery({
-    text: "key",
-  });
+// export const getStaticProps = async () => {
+//   const commandInput = {
+//     Bucket: "leaderboard.images",
+//     Key: "2022-11-26_16-16.png",
+//   };
+//   // Create the presigned URL.
+//   const imagePresignedUrl = await getSignedUrl(
+//     s3Client,
+//     new GetObjectCommand(commandInput),
+//     {
+//       expiresIn: 120,
+//     }
+//   );
+//   // Create the presigned URL.
+//   const imagePresignedPutUrl = await getSignedUrl(
+//     s3Client,
+//     new PutObjectCommand({ ...commandInput, Body: "BODY" }),
+//     {
+//       expiresIn: 120,
+//     }
+//   );
 
-  console.log(imagePresignedUrl);
-  console.log(imagePresignedPutUrl);
-  const triggerPresignedUrlCollection = () => {};
+//   console.log(imagePresignedUrl);
+//   console.log(imagePresignedPutUrl);
+//   return {
+//     props: { imagePresignedUrl, imagePresignedPutUrl },
+//   };
+// };
+
+// {
+//   imagePresignedUrl,
+//   imagePresignedPutUrl,
+// }: InferGetStaticPropsType<typeof getStaticProps>
+
+const Home = () => {
+  const [fileName, setFileName] = useState("");
+  const [savedFileUrl, setSavedFileUrl] = useState("");
+  const presignedGet = trpc.amazonPresign.presignGet.useMutation();
+  const presignedPutGet = trpc.amazonPresign.presignPut.useMutation();
+  ("new-image.png");
+  // const triggerPresignedUrlCollection = () => {
+  //   mutation.mutate({ text: "key" });
+  // };
 
   return (
     <>
@@ -30,10 +65,45 @@ const Home: NextPage = () => {
           <h1 className="text-5xl font-extrabold tracking-tight text-white sm:text-[5rem]">
             Use the camera
           </h1>
-          <ImageUploadButton />
+          <img src={savedFileUrl} key={savedFileUrl} alt="saved-image" />
           <button
             className="text-white"
-            onClick={triggerPresignedUrlCollection}
+            onClick={() => {
+              presignedGet.mutate("new-image.png");
+              const { data } = presignedGet;
+              console.log(data);
+              if (data) {
+                console.log("setting file to", data.signedUrl);
+                setSavedFileUrl(data.signedUrl);
+              }
+            }}
+          >
+            Reload saved image
+          </button>
+          <input
+            type="text"
+            onChange={(e) => {
+              setFileName(e.target.value);
+            }}
+            value={fileName}
+          />
+          <ImageUploadButton
+            submitSource={(file) => {
+              presignedPutGet.mutate("new-image.png");
+              console.log("submitted mutation");
+              const { data } = presignedPutGet;
+              if (data) {
+                console.log("submitting file ", file);
+                fetch(data.signedUrl, {
+                  method: "PUT",
+                  body: file,
+                });
+              }
+            }}
+          />
+          <button
+            className="text-white"
+            // onClick={triggerPresignedUrlCollection}
           >
             Trigger Presigned Url Activation
           </button>
@@ -59,9 +129,7 @@ const Home: NextPage = () => {
               </div>
             </Link>
           </div>
-          <p className="text-2xl text-white">
-            {hello.data ? hello.data.greeting : "Loading tRPC query..."}
-          </p>
+          <p className="text-2xl text-white"></p>
         </div>
       </main>
     </>

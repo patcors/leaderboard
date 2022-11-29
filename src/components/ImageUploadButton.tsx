@@ -1,16 +1,24 @@
-import { useState } from "react";
+import { FormEvent, useState } from "react";
 
-const ImageUploadButton = () => {
-  const [source, setSource] = useState("");
-  const handleCapture = (target: EventTarget & HTMLInputElement) => {
-    if (target.files) {
-      if (target.files.length !== 0) {
-        const file = target.files[0];
-        if (file) {
-          const newUrl = URL.createObjectURL(file);
-          setSource(newUrl);
-        }
-      }
+type ImageUploadButtonProps = {
+  submitSource: (file: File) => void;
+};
+
+const ImageUploadButton = ({ submitSource }: ImageUploadButtonProps) => {
+  const [file, setFile] = useState<File>();
+  const handleCapture = (event: FormEvent<HTMLInputElement>) => {
+    console.log(event.currentTarget.files?.[0]);
+    const newFile = event.currentTarget.files?.[0] as File;
+    console.log(newFile);
+    setFile(newFile);
+  };
+
+  const handleSubmit = () => {
+    if (file) {
+      console.log(file);
+      submitSource(file);
+    } else {
+      console.warn("no file selected yet");
     }
   };
 
@@ -21,7 +29,7 @@ const ImageUploadButton = () => {
         id="icon-button-file"
         type="file"
         capture="environment"
-        onChange={(e) => handleCapture(e.target)}
+        onChange={handleCapture}
       />
       <label htmlFor="icon-button-file">
         <svg
@@ -44,6 +52,22 @@ const ImageUploadButton = () => {
           />
         </svg>
       </label>
+      <button onClick={handleSubmit}>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="white"
+          viewBox="0 0 24 24"
+          strokeWidth={1.5}
+          stroke="currentColor"
+          className="h-6 w-6"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"
+          />
+        </svg>
+      </button>
     </>
   );
 };
